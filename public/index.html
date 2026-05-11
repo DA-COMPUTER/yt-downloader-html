@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ytdl</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <header>
+    <h1><span>yt</span>dl</h1>
+    <p>youtube downloader — powered by yt-dlp</p>
+  </header>
+
+  <section id="search-section">
+    <div class="section-label">Search</div>
+    <div class="search-row">
+      <input type="text" id="searchBox" placeholder="search youtube...">
+      <button onclick="search()">Search</button>
+    </div>
+    <div class="search-results" id="results"></div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="download-section">
+    <div class="section-label">Download</div>
+    <div class="download-form">
+      <div class="url-format-row">
+        <input type="url" id="url" placeholder="https://youtube.com/watch?v=...">
+        <select id="format">
+          <option value="360">360p</option>
+          <option value="720" selected>720p</option>
+          <option value="1080">1080p</option>
+          <option value="audio">WEBM</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <a class="btn primary watch-btn" id="watchBtn" href="#" target="_blank" onclick="updateWatchLink(event)">▶ Watch</a>
+        <button class="primary" onclick="startFetch()">↓ Download to browser</button>
+        <button onclick="startDownload()">↓ Save to server</button>
+      </div>
+
+      <div class="progress-wrap" id="progressWrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="progressBar"></div>
+        </div>
+        <div class="progress-text" id="progressText">Starting...</div>
+      </div>
+
+      <div class="download-result" id="downloadResult">
+        ✓ Saved — <a id="downloadLink" href="#" target="_blank">open file</a>
+      </div>
+
+      <div class="error-msg" id="errorMsg"></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section id="history-section">
+    <div class="section-label">History</div>
+    <div class="history-list" id="history"></div>
+  </section>
+
+</div>
+<script src="app.js"></script>
+<script>
+function updateWatchLink(e) {
+  const url = document.getElementById("url").value.trim();
+  const format = document.getElementById("format").value;
+  if (!url) { e.preventDefault(); return; }
+  const btn = document.getElementById("watchBtn");
+  btn.href = `/watch?v=${encodeURIComponent(url)}&f=${encodeURIComponent(format === "audio" ? "720" : format)}`;
+}
+document.getElementById("url").addEventListener("input", () => {
+  const url = document.getElementById("url").value.trim();
+  const format = document.getElementById("format").value;
+  const btn = document.getElementById("watchBtn");
+  btn.href = url ? `/watch?v=${encodeURIComponent(url)}&f=${encodeURIComponent(format === "audio" ? "720" : format)}` : "#";
+});
+</script>
+</body>
+</html>
