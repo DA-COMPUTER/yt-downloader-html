@@ -34,7 +34,7 @@
           <option value="360">360p</option>
           <option value="720" selected>720p</option>
           <option value="1080">1080p</option>
-          <option value="audio">WEBM</option>
+          <option value="audio">MP3</option>
         </select>
       </div>
       <div class="btn-row">
@@ -68,18 +68,57 @@
 </div>
 <script src="app.js"></script>
 <script>
-function updateWatchLink(e) {
-  const url = document.getElementById("url").value.trim();
-  const format = document.getElementById("format").value;
-  if (!url) { e.preventDefault(); return; }
-  const btn = document.getElementById("watchBtn");
-  btn.href = `/watch?v=${encodeURIComponent(url)}&f=${encodeURIComponent(format === "audio" ? "720" : format)}`;
+// Apply saved settings (accent + theme) on the main page too
+(function() {
+  try {
+    const s = JSON.parse(localStorage.getItem("ytdl_settings") || "{}");
+    const THEMES = {
+      dark:   { bg:"#0a0a0a", surface:"#111111", surface2:"#1a1a1a", surface3:"#222222", border:"#2a2a2a", border2:"#3a3a3a" },
+      darker: { bg:"#000000", surface:"#0a0a0a", surface2:"#111111", surface3:"#181818", border:"#1a1a1a", border2:"#222222" },
+      dim:    { bg:"#18191a", surface:"#242526", surface2:"#2d2e30", surface3:"#3a3b3c", border:"#3e4042", border2:"#4e4f52" }
+    };
+    const r = document.documentElement.style;
+    if (s.accent) {
+      r.setProperty("--accent", s.accent);
+      r.setProperty("--accent-dim", s.accent + "1f");
+      r.setProperty("--accent-border", s.accent + "4d");
+    }
+    const t = THEMES[s.theme] || THEMES.dark;
+    Object.entries(t).forEach(([k, v]) => r.setProperty("--" + k, v));
+    if (s.quality) {
+      const sel = document.getElementById("format");
+      if (sel) sel.value = s.quality;
+    }
+  } catch {}
+})();
+
+function extractVideoId(url) {
+  try {
+    const u = new URL(url);
+    return u.searchParams.get("v") || u.pathname.split("/").pop() || url;
+  } catch { return url; }
 }
-document.getElementById("url").addEventListener("input", () => {
+
+function buildWatchHref() {
   const url = document.getElementById("url").value.trim();
   const format = document.getElementById("format").value;
-  const btn = document.getElementById("watchBtn");
-  btn.href = url ? `/watch?v=${encodeURIComponent(url)}&f=${encodeURIComponent(format === "audio" ? "720" : format)}` : "#";
+  if (!url) return "#";
+  const id = extractVideoId(url);
+  const f = format === "audio" ? (localStorage.getItem("ytdl_settings") ? JSON.parse(localStorage.getItem("ytdl_settings")).quality || "720" : "720") : format;
+  return `/watch?v=${encodeURIComponent(id)}&f=${encodeURIComponent(f)}`;
+}
+
+function updateWatchLink(e) {
+  const href = buildWatchHref();
+  if (href === "#") { e.preventDefault(); return; }
+  document.getElementById("watchBtn").href = href;
+}
+
+document.getElementById("url").addEventListener("input", () => {
+  document.getElementById("watchBtn").href = buildWatchHref();
+});
+document.getElementById("format").addEventListener("change", () => {
+  document.getElementById("watchBtn").href = buildWatchHref();
 });
 </script>
 </body>

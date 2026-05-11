@@ -7,21 +7,44 @@
   <link rel="stylesheet" href="style.css">
   <style>
     .watch-shell { max-width: 900px; margin: 0 auto; padding: 24px 24px 80px; }
-    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-family: var(--mono); color: var(--muted); text-decoration: none; margin-bottom: 20px; transition: color 0.12s; }
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-family: var(--mono); color: var(--muted); text-decoration: none; transition: color 0.12s; }
     .back-link:hover { color: var(--text); }
+    .settings-btn { background: none; border: 0.5px solid var(--border2); color: var(--muted); font-size: 14px; padding: 5px 10px; border-radius: var(--radius); cursor: pointer; transition: color 0.12s, border-color 0.12s; }
+    .settings-btn:hover { color: var(--text); border-color: var(--border2); }
+
+    /* Settings panel */
+    .settings-panel { display: none; background: var(--surface); border: 0.5px solid var(--border2); border-radius: var(--radius-lg); padding: 20px; margin-bottom: 20px; }
+    .settings-panel.open { display: block; }
+    .settings-panel h2 { font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+    .settings-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .setting-row { display: flex; flex-direction: column; gap: 6px; }
+    .setting-label { font-size: 11px; font-family: var(--mono); color: var(--muted); }
+    .setting-row select, .setting-row input[type="color"] { width: 100%; }
+    input[type="color"] { background: var(--surface2); border: 0.5px solid var(--border2); border-radius: var(--radius); height: 36px; cursor: pointer; padding: 2px 4px; }
+    .settings-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .preset-swatches { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .swatch { width: 22px; height: 22px; border-radius: 4px; cursor: pointer; border: 2px solid transparent; transition: border-color 0.1s; flex-shrink: 0; }
+    .swatch:hover, .swatch.active { border-color: var(--text); }
+
+    /* Player */
     .player-wrap { background: #000; border-radius: var(--radius-lg); overflow: hidden; aspect-ratio: 16/9; width: 100%; position: relative; }
     .player-wrap video { width: 100%; height: 100%; display: block; }
     .player-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: #000; color: var(--muted); font-family: var(--mono); font-size: 13px; flex-direction: column; gap: 12px; }
     .spinner { width: 28px; height: 28px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Meta */
     .video-meta { margin-top: 16px; }
     .video-title { font-size: 18px; font-weight: 700; line-height: 1.3; }
     .video-sub { font-size: 12px; font-family: var(--mono); color: var(--muted); margin-top: 6px; }
     .cache-status { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-family: var(--mono); color: var(--muted); margin-top: 8px; }
-    .cache-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    .cache-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: background 0.3s; }
     .cache-dot.cached { background: var(--success); }
     .cache-dot.caching { background: var(--accent); animation: pulse 1s ease-in-out infinite; }
     @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+    /* Actions */
     .action-bar { display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap; align-items: center; }
     .action-bar select { width: auto; }
     .progress-section { margin-top: 12px; display: none; flex-direction: column; gap: 6px; }
@@ -34,7 +57,42 @@
 <body>
 <div class="watch-shell">
 
-  <a class="back-link" href="/">← back</a>
+  <div class="top-bar">
+    <a class="back-link" href="/">← back</a>
+    <button class="settings-btn" onclick="toggleSettings()" title="Settings">⚙ Settings</button>
+  </div>
+
+  <!-- Settings panel -->
+  <div class="settings-panel" id="settingsPanel">
+    <h2>Settings</h2>
+    <div class="settings-grid">
+      <div class="setting-row">
+        <span class="setting-label">Accent colour</span>
+        <div class="preset-swatches" id="swatches"></div>
+        <input type="color" id="accentColor" value="#e8a020">
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Default quality</span>
+        <select id="defaultQuality">
+          <option value="360">360p</option>
+          <option value="720" selected>720p</option>
+          <option value="1080">1080p</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span class="setting-label">Theme</span>
+        <select id="themePref">
+          <option value="dark">Dark (default)</option>
+          <option value="darker">Darker (OLED)</option>
+          <option value="dim">Dim</option>
+        </select>
+      </div>
+    </div>
+    <div class="settings-actions">
+      <button class="primary btn" onclick="saveSettings()">Save</button>
+      <button class="btn" onclick="resetSettings()">Reset</button>
+    </div>
+  </div>
 
   <div class="player-wrap" id="playerWrap">
     <div class="player-loading" id="playerLoading">
@@ -49,7 +107,7 @@
     <div class="video-sub" id="videoSub"></div>
     <div class="cache-status" id="cacheStatus">
       <div class="cache-dot" id="cacheDot"></div>
-      <span id="cacheText">checking cache...</span>
+      <span id="cacheText">checking...</span>
     </div>
   </div>
 
@@ -58,7 +116,7 @@
       <option value="360">360p</option>
       <option value="720" selected>720p</option>
       <option value="1080">1080p</option>
-      <option value="audio">MP3</option>
+      <option value="audio">Audio</option>
     </select>
     <button class="primary btn" onclick="startFetch()">↓ Download to browser</button>
     <button class="btn" onclick="startSave()">↓ Save to server</button>
@@ -74,21 +132,117 @@
 
 </div>
 <script>
-const params = new URLSearchParams(location.search);
-const videoUrl = params.get("v");
-const streamFormat = params.get("f") || "720";
+// ── Settings ─────────────────────────────────────────────────────────────────
+
+const PRESET_ACCENTS = ["#e8a020","#3b82f6","#10b981","#ef4444","#8b5cf6","#ec4899","#f59e0b","#06b6d4"];
+const THEMES = {
+  dark:   { bg: "#0a0a0a", surface: "#111111", surface2: "#1a1a1a", surface3: "#222222", border: "#2a2a2a", border2: "#3a3a3a" },
+  darker: { bg: "#000000", surface: "#0a0a0a", surface2: "#111111", surface3: "#181818", border: "#1a1a1a", border2: "#222222" },
+  dim:    { bg: "#18191a", surface: "#242526", surface2: "#2d2e30", surface3: "#3a3b3c", border: "#3e4042", border2: "#4e4f52" }
+};
+
+function loadSettings() {
+  try { return JSON.parse(localStorage.getItem("ytdl_settings") || "{}"); } catch { return {}; }
+}
+
+function applySettings(s) {
+  const accent = s.accent || "#e8a020";
+  const theme  = THEMES[s.theme] || THEMES.dark;
+  const root   = document.documentElement.style;
+  root.setProperty("--accent", accent);
+  root.setProperty("--accent-dim", accent + "1f");
+  root.setProperty("--accent-border", accent + "4d");
+  root.setProperty("--bg",       theme.bg);
+  root.setProperty("--surface",  theme.surface);
+  root.setProperty("--surface2", theme.surface2);
+  root.setProperty("--surface3", theme.surface3);
+  root.setProperty("--border",   theme.border);
+  root.setProperty("--border2",  theme.border2);
+  // Sync form fields
+  const ac = document.getElementById("accentColor");
+  if (ac) ac.value = accent;
+  const dq = document.getElementById("defaultQuality");
+  if (dq && s.quality) dq.value = s.quality;
+  const dlFmt = document.getElementById("dlFormat");
+  if (dlFmt && s.quality) dlFmt.value = s.quality;
+  const tp = document.getElementById("themePref");
+  if (tp && s.theme) tp.value = s.theme;
+  // Sync swatch active state
+  document.querySelectorAll(".swatch").forEach(sw => {
+    sw.classList.toggle("active", sw.dataset.color === accent);
+  });
+}
+
+function buildSwatches() {
+  const container = document.getElementById("swatches");
+  const s = loadSettings();
+  PRESET_ACCENTS.forEach(color => {
+    const div = document.createElement("div");
+    div.className = "swatch" + (color === (s.accent || "#e8a020") ? " active" : "");
+    div.style.background = color;
+    div.dataset.color = color;
+    div.title = color;
+    div.onclick = () => {
+      document.getElementById("accentColor").value = color;
+      document.querySelectorAll(".swatch").forEach(s => s.classList.remove("active"));
+      div.classList.add("active");
+      applySettings({ ...loadSettings(), accent: color });
+    };
+    container.appendChild(div);
+  });
+}
+
+function saveSettings() {
+  const s = {
+    accent:  document.getElementById("accentColor").value,
+    quality: document.getElementById("defaultQuality").value,
+    theme:   document.getElementById("themePref").value,
+  };
+  localStorage.setItem("ytdl_settings", JSON.stringify(s));
+  applySettings(s);
+  toggleSettings();
+}
+
+function resetSettings() {
+  localStorage.removeItem("ytdl_settings");
+  applySettings({});
+  buildSwatches();
+  document.getElementById("accentColor").value = "#e8a020";
+  document.getElementById("defaultQuality").value = "720";
+  document.getElementById("themePref").value = "dark";
+}
+
+function toggleSettings() {
+  document.getElementById("settingsPanel").classList.toggle("open");
+}
+
+// Apply on load
+buildSwatches();
+applySettings(loadSettings());
+
+// ── Video ID → full URL ───────────────────────────────────────────────────────
+
+const params  = new URLSearchParams(location.search);
+const rawParam = params.get("v") || "";
+// If it looks like a bare ID (no slashes, no dots), expand to full URL
+const videoUrl = rawParam.includes("youtube.com") || rawParam.includes("youtu.be")
+  ? rawParam
+  : `https://www.youtube.com/watch?v=${rawParam}`;
+const streamFormat = params.get("f") || loadSettings().quality || "720";
 
 let cacheTriggered = false;
 let activeSSE = null;
+let cachePolling = null;
 
-if (!videoUrl) {
-  document.getElementById("loadingText").textContent = "No URL provided.";
+if (!rawParam) {
+  document.getElementById("loadingText").textContent = "No video specified.";
 } else {
   initWatch();
 }
 
+// ── Player init ───────────────────────────────────────────────────────────────
+
 async function initWatch() {
-  // Fetch info and stream in parallel
   const [infoRes] = await Promise.all([
     fetch(`/api/info?url=${encodeURIComponent(videoUrl)}`).then(r => r.json()).catch(() => ({}))
   ]);
@@ -100,8 +254,11 @@ async function initWatch() {
       [infoRes.uploader, infoRes.duration ? fmtDur(infoRes.duration) : null].filter(Boolean).join(" · ");
   }
 
-  // Check if already cached
-  checkCacheStatus();
+  // Set default download format from settings
+  const sq = loadSettings().quality;
+  if (sq) document.getElementById("dlFormat").value = sq;
+
+  pollCacheStatus();
 
   const streamUrl = `/api/stream?url=${encodeURIComponent(videoUrl)}&format=${encodeURIComponent(streamFormat)}`;
   const video = document.getElementById("videoEl");
@@ -111,23 +268,33 @@ async function initWatch() {
 
   video.onerror = () => {
     document.getElementById("playerLoading").style.display = "flex";
-    document.getElementById("loadingText").textContent = "Stream failed. Try a lower resolution.";
+    document.getElementById("loadingText").textContent = "Stream failed. Try a lower quality.";
   };
 
-  // Trigger background cache when playback actually starts
   video.addEventListener("play", triggerCache, { once: true });
 }
 
-async function checkCacheStatus() {
-  // We can't ask the server directly what's cached, but we infer from history
-  // by making a lightweight HEAD-equivalent: just check /api/stream with a
-  // custom header — easier to just set UI to "caching" and update on cache done.
-  // The cache dot starts neutral; once triggerCache fires it goes amber, done = green.
-  setCacheDot("neutral", "not yet cached");
+// ── Cache status polling ──────────────────────────────────────────────────────
+
+async function pollCacheStatus() {
+  const res = await fetch(`/api/cache-status?url=${encodeURIComponent(videoUrl)}`).then(r => r.json()).catch(() => ({}));
+  const hasVideo = !!res.videoFile;
+  const hasAudio = !!res.audioFile;
+  const inProgress = !!res.inProgress;
+
+  if (hasVideo && hasAudio) {
+    setCacheDot("cached", "cached ✓");
+    clearInterval(cachePolling);
+  } else if (inProgress || cacheTriggered) {
+    const parts = [hasVideo ? "video ✓" : "video…", hasAudio ? "audio ✓" : "audio…"].join(" · ");
+    setCacheDot("caching", parts);
+  } else {
+    setCacheDot("neutral", "not cached");
+  }
 }
 
 function setCacheDot(state, text) {
-  const dot = document.getElementById("cacheDot");
+  const dot   = document.getElementById("cacheDot");
   const label = document.getElementById("cacheText");
   dot.className = "cache-dot" + (state === "cached" ? " cached" : state === "caching" ? " caching" : "");
   label.textContent = text;
@@ -136,7 +303,7 @@ function setCacheDot(state, text) {
 async function triggerCache() {
   if (cacheTriggered) return;
   cacheTriggered = true;
-  setCacheDot("caching", "caching in background...");
+  setCacheDot("caching", "caching in background…");
 
   try {
     const res = await fetch("/api/cache", {
@@ -146,12 +313,10 @@ async function triggerCache() {
     });
     const data = await res.json();
     if (data.alreadyCached) {
-      setCacheDot("cached", "cached");
+      setCacheDot("cached", "cached ✓");
     } else {
-      // Poll for completion — the server logs it but doesn't SSE for background jobs.
-      // We simply wait a generous time then mark as "caching" — the user can reload
-      // to verify. A proper impl would SSE the cache job too.
-      setTimeout(() => setCacheDot("cached", "cached to server"), 120_000);
+      // Poll every 5s until both files land
+      cachePolling = setInterval(pollCacheStatus, 5000);
     }
   } catch {
     setCacheDot("neutral", "cache unavailable");
@@ -162,6 +327,8 @@ function fmtDur(sec) {
   const m = Math.floor(sec / 60), s = sec % 60;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
+
+// ── Download actions ──────────────────────────────────────────────────────────
 
 function startFetch() {
   const format = document.getElementById("dlFormat").value;
@@ -176,16 +343,16 @@ function startFetch() {
 function startSave() {
   const format = document.getElementById("dlFormat").value;
   const section = document.getElementById("progressSection");
-  const label = document.getElementById("progressLabel");
-  const bar = document.getElementById("progressBar");
-  const text = document.getElementById("progressText");
-  const err = document.getElementById("errorBanner");
+  const label   = document.getElementById("progressLabel");
+  const bar     = document.getElementById("progressBar");
+  const text    = document.getElementById("progressText");
+  const err     = document.getElementById("errorBanner");
 
   section.classList.add("visible");
   err.classList.remove("visible");
   bar.style.width = "0%";
-  label.textContent = format === "audio" ? "Saving audio..." : "Saving video...";
-  text.textContent = "Starting...";
+  label.textContent = format === "audio" ? "Saving audio…" : "Saving video…";
+  text.textContent = "Starting…";
 
   if (activeSSE) activeSSE.close();
 
@@ -200,34 +367,13 @@ function startSave() {
     activeSSE = new EventSource(`/api/progress/${data.jobId}`);
     activeSSE.onmessage = e => {
       const msg = JSON.parse(e.data);
-      if (msg.progress !== undefined) {
-        bar.style.width = msg.progress + "%";
-        text.textContent = msg.status || msg.progress + "%";
-      }
-      if (msg.done) {
-        activeSSE.close();
-        bar.style.width = "100%";
-        text.textContent = "Saved ✓";
-        setCacheDot("cached", "cached");
-      }
-      if (msg.error) {
-        activeSSE.close();
-        section.classList.remove("visible");
-        err.textContent = msg.error;
-        err.classList.add("visible");
-      }
+      if (msg.progress !== undefined) { bar.style.width = msg.progress + "%"; text.textContent = msg.status || msg.progress + "%"; }
+      if (msg.done)  { activeSSE.close(); bar.style.width = "100%"; text.textContent = "Saved ✓"; pollCacheStatus(); }
+      if (msg.error) { activeSSE.close(); section.classList.remove("visible"); err.textContent = msg.error; err.classList.add("visible"); }
     };
-    activeSSE.onerror = () => {
-      activeSSE.close();
-      err.textContent = "Connection lost.";
-      err.classList.add("visible");
-    };
+    activeSSE.onerror = () => { activeSSE.close(); err.textContent = "Connection lost."; err.classList.add("visible"); };
   })
-  .catch(e => {
-    section.classList.remove("visible");
-    err.textContent = e.message;
-    err.classList.add("visible");
-  });
+  .catch(e => { section.classList.remove("visible"); err.textContent = e.message; err.classList.add("visible"); });
 }
 </script>
 </body>

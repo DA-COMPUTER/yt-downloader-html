@@ -367,7 +367,7 @@ app.post("/api/download", (req, res) => {
   proc.stderr.on("data", chunk => { stderrBuf += chunk.toString(); });
 
   proc.on("close", async code => {
-    // Check file existence regardless of exit code (warnings → exit 1)
+    // Check file existence regardless of exit code — JS-runtime warning causes exit 1
     let success = false;
     if (filename) {
       const fullPath = path.join(DOWNLOAD_DIR, filename);
@@ -377,13 +377,25 @@ app.post("/api/download", (req, res) => {
       await upsertHistory(url, { [field]: filename, format, time: Date.now() });
       broadcast({ done: true, progress: 100, file: `/downloads/${encodeURIComponent(filename)}`, filename });
     } else {
-      const detail = stderrBuf.slice(-300).trim();
-      broadcast({ error: `yt-dlp failed (exit ${code})${detail ? ": " + detail : ""}` });
+      // Strip known non-fatal warnings before showing error to user
+      const knownWarnings = /No supported JavaScript runtime|js-runtimes|EJS|deno is enabled/gi;
+      const detail = stderrBuf.replace(knownWarnings, "").replace(/WARNING:[^\n]*/g, "").trim().slice(-300);
+      const msg = detail || `yt-dlp exited with code ${code}`;
+      broadcast({ error: msg });
     }
     setTimeout(() => jobs.delete(jobId), 60000);
   });
 
   proc.on("error", () => { broadcast({ error: "Failed to start process." }); jobs.delete(jobId); });
+});
+
+// Cache status — lets watch page poll whether a URL is fully cached
+app.get("/api/cache-status", async (req, res) => {
+  const { url } = req.query;
+  if (!url) return res.status(400).json({});
+  const [vp, ap] = await Promise.all([cachedVideoPath(url), cachedAudioPath(url)]);
+  const inProgress = cacheJobs.has(url);
+  res.json({ videoFile: vp ? path.basename(vp) : null, audioFile: ap ? path.basename(ap) : null, inProgress });
 });
 
 // SSE progress

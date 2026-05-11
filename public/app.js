@@ -23,8 +23,17 @@ function timeAgo(ts) {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function extractVideoId(url) {
+  // Accept full YouTube URLs or bare IDs
+  try {
+    const u = new URL(url);
+    return u.searchParams.get("v") || u.pathname.split("/").pop() || url;
+  } catch { return url; }
+}
+
 function watchUrl(url, format) {
-  return `/watch?v=${encodeURIComponent(url)}&f=${encodeURIComponent(format || "720")}`;
+  const id = extractVideoId(url);
+  return `/watch?v=${encodeURIComponent(id)}&f=${encodeURIComponent(format || "720")}`;
 }
 
 function fetchUrl(url, format) {
