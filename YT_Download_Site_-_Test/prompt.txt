@@ -1,0 +1,13 @@
+Could you make these updates:
+
+
+
+1. Make the settings appear in a popup overlay on both the watch page and the index page. Fix the settings because every time you click reset, another line of color swathes appears below the first one And it keep happening
+
+2. Replace the Download section of index.html with a "From URL" section that has watch and download features and remove the 'Save to Server' buttons from watch.html and index.html
+
+3. Make the download menu appear in a popup with an Audio/Video selection and pixel selection for video instead of just a small drop-down and button
+
+4. Remove the select button from the video search list and make the download button open the popup.
+
+5. Make history on index.html show video name, not url
